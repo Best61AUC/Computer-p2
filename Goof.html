@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anatomy Practical Quiz</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Roboto:wght@400;500;700&display=swap');
+
+  :root {
+    --primary-color: #1a237e;
+    --secondary-color: #5c6bc0;
+    --accent-color: #ffc107;
+    --bg-color: #f0f2f5;
+    --card-bg-color: #ffffff;
+    --text-color: #212121;
+    --light-text-color: #f5f5f5;
+    --shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', 'Cairo', sans-serif;
+    background-color: var(--bg-color);
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* --- Splash Screen with natural background --- */
+  #splash-screen {
+    position: fixed;
+    inset: 0;
+    background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1470&q=80') no-repeat center center/cover;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: var(--light-text-color);
+    text-align: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+
+  #splash-title {
+    font-family: 'Cairo', sans-serif;
+    font-size: 4rem;
+    font-weight: 700;
+    text-shadow: 0 0 20px rgba(0, 0, 70, 0.9);
+    margin-bottom: 30px;
+    background: linear-gradient(45deg, var(--accent-color), #fff, var(--accent-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shine 3s linear infinite;
+    user-select: none;
+  }
+
+  @keyframes shine {
+    0% { background-position: -200%; }
+    100% { background-position: 200%; }
+  }
+
+  #start-quiz-btn {
+    padding: 18px 45px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 50px;
+    background-color: var(--accent-color);
+    color: var(--primary-color);
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(255 193 7 / 0.6);
+    transition: all 0.3s ease;
+    user-select: none;
+  }
+
+  #start-quiz-btn:hover {
+    transform: translateY(-5px) scale(1.1);
+    box-shadow: 0 8px 30px rgba(255 193 7 / 0.9);
+  }
+
+  /* --- Main Quiz Container --- */
+  #quiz-container {
+    max-width: 900px;
+    width: 95vw;
+    height: 90vh;
+    margin: 30px auto;
+    background-color: transparent;
+    display: none;
+    flex-direction: column;
+    perspective: 1500px;
+    position: relative;
+  }
+
+  #card-container {
+    flex-grow: 1;
+    position: relative;
+  }
+
+  .card {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: var(--card-bg-color);
+    border-radius: 15px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    overflow: hidden;
+  }
+
+  .card.active {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    z-index: 10;
+  }
+
+  .card.prev-card {
+    transform: translateX(-110%) scale(0.8);
+  }
+
+  .card.next-card {
+    transform: translateX(110%) scale(0.8);
+  }
+
+  /* تعديل: تقليل ارتفاع الصورة في بطاقة الإجابة */
+  .card-image-container {
+    flex: 0 0 40%; /* تم تقليلها من 50% إلى 40% */
+    background-color: #ddd;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    overflow: hidden;
+    box-shadow: inset 0 0 60px rgb(0 0 0 / 0.1);
+  }
+
+  .card-image-container.no-image {
+    font-size: 1.2rem;
+    color: #999;
+    font-style: italic;
+  }
+
+  .card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .card-content {
+    padding: 25px 35px;
+    flex-grow: 1;
+    overflow-y: auto;
+  }
+
+  .card-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 0 0 20px 0;
+    border-bottom: 3px solid var(--secondary-color);
+    padding-bottom: 12px;
+  }
+
+  .answer-diagram {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    background-color: #e8eaf6;
+    padding: 12px 14px;
+    border-radius: 9px;
+    margin-bottom: 20px;
+  }
+
+  ol.answer-list {
+    margin-left: 20px;
+    font-size: 1.1rem;
+    line-height: 1.7;
+  }
+
+  ol.answer-list li {
+    margin: 6px 0;
+  }
+
+  #navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 15px;
+  }
+
+  #progress-bar-container {
+    flex-grow: 1;
+    height: 12px;
+    background-color: #ddd;
+    border-radius: 6px;
+    margin: 0 18px;
+    overflow: hidden;
+  }
+
+  #progress-bar {
+    height: 100%;
+    width: 0;
+    background-color: var(--secondary-color);
+    border-radius: 6px;
+    transition: width 0.4s ease;
+  }
+
+  .nav-btn {
+    padding: 13px 30px;
+    font-size: 1rem;
+    font-weight: 600;
+    border: 2px solid var(--primary-color);
+    border-radius: 30px;
+    background-color: var(--card-bg-color);
+    color: var(--primary-color);
+    cursor: pointer;
+    min-width: 130px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  .nav-btn:hover:not(:disabled) {
+    background-color: var(--primary-color);
+    color: var(--light-text-color);
+  }
+
+  .nav-btn:disabled {
+    background-color: #eee;
+    border-color: #ccc;
+    color: #999;
+    cursor: not-allowed;
+  }
+
+  /* Feedback form */
+  #feedback-form {
+    text-align: center;
+    padding: 20px 10px;
+  }
+
+  #feedback-form h3 {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    margin-bottom: 12px;
+  }
+
+  #feedback-form p {
+    margin-bottom: 15px;
+  }
+
+  #feedback-text {
+    width: 90%;
+    max-width: 540px;
+    min-height: 100px;
+    font-size: 1rem;
+    padding: 12px;
+    border-radius: 9px;
+    border: 1px solid #bbb;
+    resize: vertical;
+  }
+
+  #submit-feedback-btn {
+    margin-top: 15px;
+    padding: 12px 35px;
+    font-weight: 700;
+    font-size: 1rem;
+    border-radius: 50px;
+    border: none;
+    background-color: var(--secondary-color);
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  #submit-feedback-btn:hover {
+    background-color: var(--primary-color);
+  }
+
+  #feedback-confirmation {
+    margin-top: 12px;
+    color: green;
+    font-weight: 700;
+    display: none;
+  }
+</style>
+</head>
+<body>
+<!-- Splash screen -->
+<div id="splash-screen">
+  <h1 id="splash-title">✨ صلِّ على النبي ﷺ ✨</h1>
+  <button id="start-quiz-btn" title="ابدأ الاختبار العملي للتشريح">ابدأ الاختبار</button>
+</div>
+
+<!-- Quiz Container -->
+<div id="quiz-container" role="main" aria-live="polite" aria-label="Anatomy Practical Quiz">
+  <div id="card-container" aria-atomic="true" aria-relevant="additions">
+    <!-- Cards injected here -->
+  </div>
+  <div id="navigation">
+    <button id="prev-btn" class="nav-btn" aria-label="Previous card">Previous</button>
+    <div id="progress-bar-container" aria-label="Progress bar">
+      <div id="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+    </div>
+    <button id="next-btn" class="nav-btn" aria-label="Next card">Next</button>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+
+    const TELEGRAM_TOKEN = "8012817761:AAFkdk62COcx3a2OY4XFvmt8PKxjF3vCmEo";
+    const TELEGRAM_CHAT_ID = "6784256397";
+
+    const quizData = [
+      {
+        q: "Identify the diagram and name the pointed structures.",
+        qImage: "A1.jpg",
+        a: {
+          diagram: "Urinary system in the Abdominal cavity",
+          points: ["Inferior vena cava", "Left Kidney", "Abdominal aorta", "Left ureter", "Urinary bladder", "Urethra"]
+        },
+        aImage: "Aa1.jpg"
+      },
+      {
+        q: "Identify the diagram and name the pointed structures.",
+        qImage: "A2.jpg",
+        a: {
+          diagram: "Urinary system",
+          points: [
+            "Right Kidney", "Cortex (inside view)", "Medullary pyramids",
+            "Medullary papilla / Minor calyx", "Renal pelvis", "Right Ureter",
+            "Urinary bladder", "Opening of Right ureter in the trigone",
+            "Internal sphincter", "External sphincter", "Urethra"
+          ]
+        },
+        aImage: "Aa2.jpg"
+      },
+      {
+        q: "Identify the diagram and name the pointed structures.",
+        qImage: "A3.jpg",
+        a: {
+          diagram: "Right Kidney and suprarenal gland",
+          points: ["Right Kidney", "Right suprarenal gland", "Renal artery", "Renal vein", "Right ureter"]
+        },
+        aImage: "Aa3.jpg"
+      },
+      {
+        q: "Identify the diagram and name the pointed structures.",
+        qImage: "A4.jpg",
+        a: {
+          diagram: "Internal structure of Right Kidney",
+          points: [
+            "Capsule of the Kidney", "Renal cortex", "Pyramids in renal medulla",
+            "Renal artery", "Renal vein", "Minor calyx", "Major calyx",
+            "Renal pelvis", "Right ureter", "Renal papilla", "Renal sinus"
+          ]
+        },
+        aImage: "Aa4.jpg"
+      },
+      {
+        q: "Identify the diagram and name the pointed structures.",
+        qImage: "A5.jpg",
+        a: {
+          diagram: "Left Kidney and Left suprarenal gland",
+          points: [
+            "Left Kidney", "Left suprarenal gland", "Hilum of Left Kidney",
+            "Left suprarenal vein", "Left renal vein", "Anterior and posterior branches of renal artery",
+            "Left testicular / ovarian vein", "Left ureter"
+          ]
+        },
+        aImage: null
+      },
+      {
+        q: "Identify the diagram and name the pointed structures.",
+        qImage: "A6.jpg",
+        a: {
+          diagram: "Kidneys and related structures of Abdominal cavity",
+          points: [
+            "Suprarenal gland", "Right Kidney", "Left Kidney",
+            "Left renal vein", "Ureters", "Abdominal aorta", "Inferior vena cava"
+          ]
+        },
+        aImage: "Aa6.jpg"
+      },
+      {
+        q: "Identify the diagram and name the pointed structures.",
+        qImage: "A7.jpg",
+        a: {
+          diagram: "Urinary system and the blood supply of the Kidney",
+          points: [
+            "Capsule of right Kidney", "Renal cortex", "Pyramid in renal medulla",
+            "Pelvis of Kidney", "Ureter", "Urinary bladder", "Urethra",
+            "Renal arteries", "Renal veins", "Inferior vena cava", "Abdominal aorta",
+            "Left common iliac vein", "Right common iliac artery"
+          ]
+        },
+        aImage: "Aa7.jpg"
+      },
+      {
+        q: "Mention two Anterior relations for the structure A (Right Kidney).",
+        qImage: "A8.jpg",
+        a: {
+          points: ["Right lobe of liver", "Right suprarenal gland", "Jejunum", "Right colic flexure"]
+        },
+        aImage: null
+      },
+      {
+        q: "Mention two Anterior relations for the structure B (Left Kidney).",
+        qImage: "A8.jpg",
+        a: {
+          points: ["Left suprarenal gland", "Pancreas", "Spleen", "Left colic flexure"]
+        },
+        aImage: null
+      },
+      {
+        q: "Mention two posterior relations for the structure A (Right Kidney).",
+        qImage: "A8.jpg",
+        a: {
+          points: ["Diaphragm", "Right psoas major", "12th rib", "Right subcostal nerve"]
+        },
+        aImage: null
+      },
+      {
+        q: "Mention the lymphatics of the structure B (Left Kidney).",
+        qImage: "A8.jpg",
+        a: {
+          points: ["Para-aortic lymph nodes"]
+        },
+        aImage: null
+      },
+      {
+        q: "Identify the pointed structure A and Mention its nerve supply.",
+        qImage: "A8.jpg",
+        a: {
+          diagram: "Right Kidney",
+          points: ["Sympathetic (renal plexus)", "Parasympathetic (Vagus nerve)"]
+        },
+        aImage: null
+      },
+      {
+        q: "Identify the diagram and name the pointed structures.",
+        qImage: "A9.jpg",
+        a: {
+          diagram: "Superior view of male and female Pelvic cavity",
+          points: [
+            "Urinary bladder", "Ureter", "Ureter", "Uterus", "Sigmoid colon",
+            "Common iliac artery", "Internal iliac artery", "Uterine artery"
+          ]
+        },
+        aImage: "Aa9.jpg"
+      },
+      {
+        q: "Identify number 1 and mention its arterial supply.",
+        qImage: "A9.jpg",
+        a: {
+          diagram: "Urinary bladder",
+          points: ["Superior and Inferior vesicle artery", "From obturator and inferior gluteal artery"]
+        },
+        aImage: "Aa9.jpg"
+      },
+      {
+        q: "Identify number 1 and mention two posterior relations.",
+        qImage: "A9.jpg",
+        a: {
+          diagram: "Urinary bladder",
+          points: ["Vas deferens", "Seminal vesicle", "Rectum"]
+        },
+        aImage: "Aa9.jpg"
+      },
+      {
+        q: "Identify number 2 and mention two arterial relations.",
+        qImage: "A9.jpg",
+        a: {
+          diagram: "Right ureter",
+          points: ["Bifurcation of common iliac artery", "External iliac artery", "Obturator artery"]
+        },
+        aImage: "Aa9.jpg"
+      },
+      {
+        q: "Identify number 2 and mention its length.",
+        qImage: "A9.jpg",
+        a: {
+          diagram: "Right ureter",
+          points: ["30 cm"]
+        },
+        aImage: "Aa9.jpg"
+      },
+      {
+        q: "Identify number 1 and mention its lymphatics.",
+        qImage: "A9.jpg",
+        a: {
+          diagram: "Urinary bladder",
+          points: ["External iliac lymph nodes"]
+        },
+        aImage: "Aa9.jpg"
+      },
+      {
+        q: "Identify the diagram and name the pointed structures.",
+        qImage: "A10.jpg",
+        a: {
+          diagram: "Male Urinary tract and its related structures",
+          points: [
+            "Penile Urethra", "Membranous urethra", "Prostatic urethra", "Prostate",
+            "Ejaculatory duct", "Rectum", "Seminal vesicle", "Vas deferens",
+            "Urinary bladder", "Ureter"
+          ]
+        },
+        aImage: "Aa10.jpg"
+      },
+      {
+        q: "Identify the diagram and name the pointed structures.",
+        qImage: "A11.jpg",
+        a: {
+          diagram: "Female Urinary tract and its related structures",
+          points: [
+            "Urethra", "Urinary bladder", "Ureter", "Vagina", "Vesicouterine pouch",
+            "Rectouterine pouch", "Uterus", "Ovary", "Fallopian tube", "Rectum"
+          ]
+        },
+        aImage: "Aa11.jpg"
+      },
+      {
+        q: "Identify the diagram and name the pointed structures.",
+        qImage: "A12.jpg",
+        a: {
+          diagram: "Parts of male urethra and Urinary bladder",
+          points: [
+            "Urinary bladder", "Opening of ureter", "Trigone", "Prostate gland", "Cowper's gland",
+            "Corpus spongiosum", "Navicular fossa", "External urethral orifice", "Glans penis",
+            "Corpus cavernosum", "Penile Urethra", "Membranous urethra", "Prostatic urethra"
+          ]
+        },
+        aImage: null
+      },
+      {
+        q: "Identify the diagram and name the pointed structures.",
+        qImage: "A13.jpg",
+        a: {
+          diagram: "Prostatic and membranous urethra",
+          points: [
+            "Prostate gland", "Prostatic urethra", "Internal urethral sphincter",
+            "External urethral sphincter", "Seminal colliculus", "Prostatic utricle",
+            "Opening of ejaculatory duct"
+          ]
+        },
+        aImage: "Aa13.jpg"
+      },
+      {
+        q: "Identify the renal anomaly and mention its cause.",
+        qImage: "A14.jpg",
+        a: {
+          diagram: "Horseshoe kidney",
+          points: ["The kidneys fuse into a single structure, typically underneath the inferior mesenteric artery (IMA)."]
+        },
+        aImage: null
+      },
+      {
+        q: "Identify the congenital anomalies.",
+        qImage: "A15.jpg",
+        a: {
+          diagram: "Pelvic kidney and Double ureter"
+        },
+        aImage: null
+      },
+      {
+        q: "Identify the congenital anomaly.",
+        qImage: "A16.jpg",
+        a: {
+          diagram: "Polycystic Kidney"
+        },
+        aImage: null
+      },
+      {
+        q: "Identify the congenital anomaly.",
+        qImage: "A17.jpg",
+        a: {
+          diagram: "Urachal Sinus"
+        },
+        aImage: null
+      },
+      {
+        q: "Identify the congenital anomaly.",
+        qImage: "A18.jpg",
+        a: {
+          diagram: "Urachal Cyst"
+        },
+        aImage: null
+      },
+      {
+        q: "Identify the congenital anomaly.",
+        qImage: "A19.jpg",
+        a: {
+          diagram: "Hypospadias"
+        },
+        aImage: null
+      },
+      {
+        q: "Identify the congenital anomaly.",
+        qImage: "A20.jpg",
+        a: {
+          diagram: "Epispadias"
+        },
+        aImage: null
+      }
+    ];
+
+    const splashScreen = document.getElementById('splash-screen');
+    const startQuizBtn = document.getElementById('start-quiz-btn');
+    const quizContainer = document.getElementById('quiz-container');
+    const cardContainer = document.getElementById('card-container');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const progressBar = document.getElementById('progress-bar');
+
+    let flashcards = [];
+    let currentCardIndex = 0;
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    async function sendTelegramMessage(text) {
+      const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
+      const payload = {
+        chat_id: TELEGRAM_CHAT_ID,
+        text: text,
+        parse_mode: 'HTML'
+      };
+      try {
+        await fetch(url, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+      } catch (e) {
+        console.error('Telegram send error:', e);
+      }
+    }
+
+    function createCard(contentHtml, isQuestion, item) {
+      const card = document.createElement('div');
+      card.classList.add('card');
+      const imageContainer = document.createElement('div');
+      imageContainer.classList.add('card-image-container');
+
+      let imageSrc = isQuestion ? item.qImage : item.aImage;
+      if(imageSrc) {
+        const img = document.createElement('img');
+        img.src = imageSrc;
+        img.alt = isQuestion ? 'Question Image' : 'Answer Image';
+        img.classList.add('card-image');
+        img.onerror = () => {
+          img.style.display = 'none';
+          imageContainer.classList.add('no-image');
+          imageContainer.textContent = 'Image not found: ' + imageSrc;
+        };
+        imageContainer.appendChild(img);
+      } else {
+        imageContainer.classList.add('no-image');
+        imageContainer.textContent = 'No image.';
+      }
+
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'card-content';
+      contentDiv.innerHTML = contentHtml;
+
+      card.appendChild(imageContainer);
+      card.appendChild(contentDiv);
+      return card;
+    }
+
+    function buildFlashcards() {
+      // Shuffle questions for randomness
+      shuffleArray(quizData);
+
+      flashcards = [];
+      cardContainer.innerHTML = '';
+
+      quizData.forEach(item => {
+        // Question card content
+        const qHtml = `<h2 class="card-title">${item.q}</h2>`;
+        flashcards.push(createCard(qHtml, true, item));
+
+        // Answer card content
+        let aHtml = '';
+        if(item.a.diagram) {
+          aHtml += `<div class="answer-diagram"><b>Diagram:</b> ${item.a.diagram}</div>`;
+        }
+        if(item.a.points && item.a.points.length > 0) {
+          aHtml += '<ol class="answer-list">';
+          item.a.points.forEach(p => aHtml += `<li>${p}</li>`);
+          aHtml += '</ol>';
+        }
+        flashcards.push(createCard(aHtml, false, item));
+      });
+
+      // Add feedback card 
+      const feedbackHtml = `
+        <div id="feedback-form" role="region" aria-label="Feedback Form">
+          <h3>Enjoyed the quiz?</h3>
+          <p>If you have suggestions or improvements, please share below:</p>
+          <textarea id="feedback-text" placeholder="Your feedback..." aria-label="Feedback Text"></textarea>
+          <button id="submit-feedback-btn" aria-label="Submit Feedback">Send Feedback</button>
+          <p id="feedback-confirmation" role="alert" aria-live="polite">Thank you for your feedback!</p>
+        </div>
+      `;
+      flashcards.push(createCard(feedbackHtml, false, {aImage:null}));
+
+      flashcards.forEach(card => cardContainer.appendChild(card));
+
+      // Feedback button event
+      document.getElementById('submit-feedback-btn').addEventListener('click', () => {
+        const text = document.getElementById('feedback-text').value.trim();
+        if(text !== '') {
+          sendTelegramMessage(`<b>New Feedback:</b>\n\n${text}`);
+          const confirmation = document.getElementById('feedback-confirmation');
+          confirmation.style.display = 'block';
+          document.getElementById('feedback-text').value = '';
+        }
+      });
+    }
+
+    function updateUI() {
+      flashcards.forEach((card, idx) => {
+        card.classList.remove('active', 'prev-card', 'next-card');
+        if(idx === currentCardIndex) {
+          card.classList.add('active');
+        } else if(idx < currentCardIndex) {
+          card.classList.add('prev-card');
+        } else {
+          card.classList.add('next-card');
+        }
+      });
+      prevBtn.disabled = currentCardIndex === 0;
+      nextBtn.disabled = currentCardIndex === flashcards.length - 1;
+      let progress = (currentCardIndex / (flashcards.length - 1)) * 100;
+      progressBar.style.width = `${progress}%`;
+      progressBar.setAttribute('aria-valuenow', Math.round(progress));
+    }
+
+    function startQuiz() {
+      splashScreen.style.display = 'none';
+      quizContainer.style.display = 'flex';
+      sendTelegramMessage('A user has started the Anatomy Practical Quiz! 📖');
+      buildFlashcards();
+      currentCardIndex = 0;
+      updateUI();
+    }
+
+    startQuizBtn.addEventListener('click', startQuiz);
+
+    nextBtn.addEventListener('click', () => {
+      if(currentCardIndex < flashcards.length - 1) {
+        currentCardIndex++;
+        updateUI();
+      }
+    });
+
+    prevBtn.addEventListener('click', () => {
+      if(currentCardIndex > 0) {
+        currentCardIndex--;
+        updateUI();
+      }
+    });
+
+    // Keyboard support for navigation
+    document.addEventListener('keydown', e => {
+      if(quizContainer.style.display === 'flex') {
+        if(e.key === 'ArrowRight' && !nextBtn.disabled) nextBtn.click();
+        else if(e.key === 'ArrowLeft' && !prevBtn.disabled) prevBtn.click();
+      }
+    });
+  });
+</script>
+</body>
+</html>
